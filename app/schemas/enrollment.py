@@ -1,9 +1,7 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
 from datetime import datetime
 
 class EnrollmentCreate(BaseModel):
-    user_id: Optional[int] = None
     course_id: int
 
 class EnrollmentOut(BaseModel):

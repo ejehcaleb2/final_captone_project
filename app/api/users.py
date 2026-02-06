@@ -11,12 +11,12 @@ from app.deps import get_db
 
 router = APIRouter()
 
-# --- Schemas ---
+
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
-    role: str  # 'student' or 'admin'
+    role: str 
 
 class UserOut(BaseModel):
     id: int
@@ -29,14 +29,13 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-# --- Registration endpoint ---
 @router.post("/register", response_model=UserOut)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Validate role
+    
     if user.role not in ("student", "admin"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
 
-    # Check if email already exists
+    
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
         raise HTTPException(
@@ -44,10 +43,10 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
 
-    # Hash password
+  
     hashed_pwd = hash_password(user.password)
 
-    # Create User instance
+    
     new_user = User(
         name=user.name,
         email=user.email,
@@ -56,17 +55,17 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         is_active=True
     )
 
-    # Add to DB
+   
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
     return new_user
 
-# --- Login endpoint ---
+
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Find user by email
+   
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user:
         raise HTTPException(
@@ -80,13 +79,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="Inactive user"
         )
 
-    # Verify password
     if not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid email or password"
         )
-
     # Create JWT token
     access_token = create_access_token(data={"sub": user.email})
 

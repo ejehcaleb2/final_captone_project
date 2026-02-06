@@ -41,7 +41,7 @@ def student_deregister(course_id: int, db: Session = Depends(get_db), current_us
     db.commit()
     return {"message": "Successfully deregistered from course"}
 
-from app.deps import get_current_admin, get_current_user  # make sure you have this in deps
+from app.deps import get_current_admin, get_current_user 
 
 @router.get("/all", response_model=List[EnrollmentOut])
 def view_all_enrollments(db: Session = Depends(get_db), current_user = Depends(get_current_user)):

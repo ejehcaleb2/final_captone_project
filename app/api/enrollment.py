@@ -50,6 +50,13 @@ def view_all_enrollments(db: Session = Depends(get_db), current_admin = Depends(
     return enrollments
 
 
+@router.get("/my-enrollments", response_model=List[EnrollmentOut])
+def view_my_enrollments(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    # Students (and admins if needed) can view their own enrollments
+    enrollments = db.query(Enrollment).filter(Enrollment.user_id == current_user.id).all()
+    return enrollments
+
+
 @router.get("/{enrollment_id}", response_model=EnrollmentOut)
 def get_enrollment_by_id(enrollment_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     # Any authenticated user can view their own enrollment; admins can view any
@@ -61,13 +68,6 @@ def get_enrollment_by_id(enrollment_id: int, db: Session = Depends(get_db), curr
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot view other users' enrollments")
     
     return enrollment
-
-
-@router.get("/me", response_model=List[EnrollmentOut])
-def view_my_enrollments(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    # Students (and admins if needed) can view their own enrollments
-    enrollments = db.query(Enrollment).filter(Enrollment.user_id == current_user.id).all()
-    return enrollments
 
 
 @router.get("/course/{course_id}", response_model=List[EnrollmentOut])

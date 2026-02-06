@@ -5,20 +5,18 @@ from typing import List
 from app.models.enrollment import Enrollment
 from app.schemas.enrollment import EnrollmentCreate, EnrollmentOut
 from app.crud.enrollment import enroll_student
-from app.deps import get_db, get_current_user
+from app.deps import get_db, get_current_user, get_current_admin
 
 router = APIRouter(prefix="/enrollments", tags=["Enrollments"])
 
 
 @router.post("/", response_model=EnrollmentOut)
 def student_enroll(enrollment: EnrollmentCreate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    # Admins can enroll any student, students can only enroll themselves
-    if current_user.role == "admin":
-        user_id = enrollment.user_id or current_user.id
-    else:
-        user_id = current_user.id
-        if enrollment.user_id and enrollment.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot enroll another user")
+    # Only students may enroll themselves
+    if current_user.role != "student":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only students may enroll in courses")
+
+    user_id = current_user.id
     
     try:
         new_enrollment = enroll_student(db, user_id, enrollment.course_id)
@@ -29,6 +27,9 @@ def student_enroll(enrollment: EnrollmentCreate, db: Session = Depends(get_db), 
 
 @router.delete("/{course_id}", response_model=dict)
 def student_deregister(course_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    # Only students may deregister themselves
+    if current_user.role != "student":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only students may deregister from courses")
     enrollment = db.query(Enrollment).filter(
         Enrollment.user_id == current_user.id,
         Enrollment.course_id == course_id
@@ -41,15 +42,18 @@ def student_deregister(course_id: int, db: Session = Depends(get_db), current_us
     db.commit()
     return {"message": "Successfully deregistered from course"}
 
-from app.deps import get_current_admin, get_current_user 
 
 @router.get("/all", response_model=List[EnrollmentOut])
-def view_all_enrollments(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    # Admins see all enrollments; students see only their own
-    if current_user.role == "admin":
-        enrollments = db.query(Enrollment).all()
-    else:
-        enrollments = db.query(Enrollment).filter(Enrollment.user_id == current_user.id).all()
+def view_all_enrollments(db: Session = Depends(get_db), current_admin = Depends(get_current_admin)):
+    # Admins only: view all enrollments
+    enrollments = db.query(Enrollment).all()
+    return enrollments
+
+
+@router.get("/me", response_model=List[EnrollmentOut])
+def view_my_enrollments(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    # Students (and admins if needed) can view their own enrollments
+    enrollments = db.query(Enrollment).filter(Enrollment.user_id == current_user.id).all()
     return enrollments
 
 

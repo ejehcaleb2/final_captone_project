@@ -6,7 +6,8 @@ from pydantic import BaseModel
 from app.models.course import Course
 from app.schemas.course import CourseCreate, CourseOut, CourseUpdate
 from app.crud.course import create_course, update_course
-from app.deps import get_db, get_current_admin
+from app.deps import get_db, get_current_admin, get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
@@ -26,13 +27,15 @@ def admin_create_course(course: CourseCreate, db: Session = Depends(get_db), adm
 
 
 @router.get("/", response_model=List[CourseOut])
-def get_all_courses(db: Session = Depends(get_db)):
+def get_all_courses(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    # Only authenticated users (students or admins) may view courses
     courses = db.query(Course).filter(Course.is_active == True).all()
     return courses
 
 
 @router.get("/{course_id}", response_model=CourseOut)
-def get_course(course_id: int, db: Session = Depends(get_db)):
+def get_course(course_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    # Only authenticated users (students or admins) may view a course
     course = db.query(Course).filter(Course.id == course_id, Course.is_active == True).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")

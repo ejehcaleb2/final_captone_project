@@ -48,7 +48,6 @@ def admin_update_course(course_id: int, payload: CourseUpdate, db: Session = Dep
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    # If updating code (not currently in CourseUpdate) ensure uniqueness handled elsewhere
     updated = update_course(db, course, payload)
     return updated
 

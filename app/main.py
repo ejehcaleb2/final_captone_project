@@ -1,7 +1,11 @@
 from fastapi import FastAPI
+from dotenv import load_dotenv
 from app.api import enrollment, users, courses  # import courses router
 
-app = FastAPI()
+# Load environment variables from .env file
+load_dotenv()
+
+app = FastAPI(title="Course Enrollment Platform", version="1.0.0")
 
 # Include the users router
 app.include_router(users.router, prefix="/users", tags=["Users"])

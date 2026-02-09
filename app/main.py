@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
-from app.api import enrollment, users, courses  # import courses router
+from app.api import enrollment, users, courses
 
 # Load environment variables from .env file
 load_dotenv()

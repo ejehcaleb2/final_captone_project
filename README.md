@@ -14,7 +14,7 @@ A secure, database-backed RESTful API for managing a course enrollment platform 
 
 ## Setup Instructions
 
-1. **Clone the repository** and navigate to the project directory.
+1. **Clone the repository** (if applicable) and navigate to the project directory.
 
 2. **Create a virtual environment:**
    ```bash
@@ -31,31 +31,22 @@ A secure, database-backed RESTful API for managing a course enrollment platform 
    ```
 
 5. **Set up environment variables:**
-   - Copy `.env.example` to `.env` (or edit the existing `.env`)
-   - **IMPORTANT**: Update `DATABASE_URL` with your PostgreSQL connection string:
-     - **Local Development**: `postgresql://postgres:your_password@localhost:5432/course_enrollment_db`
-     - **Render Deployment**: Copy the connection string from your Render PostgreSQL dashboard
-   - Update `SECRET_KEY` with a secure random string (e.g., using `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
+   - Copy `.env` file and update `SECRET_KEY` with a secure random string.
 
-6. **Ensure PostgreSQL is running:**
-   - For local development: Start your PostgreSQL server
-   - For Render: Your database will be automatically available
-
-7. **Run database migrations:**
+6. **Run database migrations:**
    ```bash
    alembic upgrade head
    ```
 
-8. **Run the application:**
+7. **Run the application:**
    ```bash
    uvicorn app.main:app --reload
    ```
 
    The API will be available at `http://127.0.0.1:8000`
 
-9. **Access API documentation:**
+8. **Access API documentation:**
    - Interactive API docs: `http://127.0.0.1:8000/docs`
-   - ReDoc: `http://127.0.0.1:8000/redoc`
 
 ## Running Tests
 

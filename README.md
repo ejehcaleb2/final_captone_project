@@ -106,7 +106,7 @@ A secure, database-backed RESTful API for managing a course enrollment platform 
 - Role-based access control (Student/Admin)
 - Course management
 - Enrollment management with business rules
-- SQLite database with migrations
+- PostgreSQL database with migrations
 - Comprehensive automated tests
 
 ## Setup Instructions
@@ -119,7 +119,7 @@ A secure, database-backed RESTful API for managing a course enrollment platform 
    ```
 
 3. **Activate the virtual environment:**
-   - On Windows: `venv\\Scripts\\activate`
+   - On Windows: `venv\Scripts\activate`
    - On macOS/Linux: `source venv/bin/activate`
 
 4. **Install dependencies:**
@@ -128,7 +128,7 @@ A secure, database-backed RESTful API for managing a course enrollment platform 
    ```
 
 5. **Set up environment variables:**
-   - Copy `.env` file and update `SECRET_KEY` with a secure random string.
+   - Copy `.env` from `.env.example` and update `DATABASE_URL` and `SECRET_KEY`.
 
 6. **Run database migrations:**
    ```bash
@@ -188,12 +188,10 @@ All tests should pass, covering authentication, course management, enrollment lo
 
 ## Database
 
-Uses SQLite with SQLAlchemy ORM. Migrations are handled by Alembic.
+Uses PostgreSQL with SQLAlchemy ORM. Migrations are handled by Alembic.
 
 ## Security
 
 - Passwords are hashed using PBKDF2
 - JWT tokens for authentication
 - Role-based access control
-
-# final_captone_project

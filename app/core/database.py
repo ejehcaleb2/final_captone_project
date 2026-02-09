@@ -2,11 +2,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from os import getenv
 
-# Load database URL from environment variable
+# Read DATABASE_URL from environment (app.__init__ loads .env in development)
 DATABASE_URL = getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set. Check your .env file.")
+    raise ValueError(
+        "DATABASE_URL environment variable is not set. On Render: add your managed Postgres URL to the service's Environment > Environment Variables as DATABASE_URL (example: postgresql://user:pass@host:5432/dbname?sslmode=require). Do not commit a .env file to the repo."
+    )
 
 # Configure connect_args for SSL (only for remote connections, not localhost)
 connect_args = {}

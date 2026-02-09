@@ -7,8 +7,14 @@ DATABASE_URL = getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     raise ValueError(
-        "DATABASE_URL environment variable is not set. On Render: add your managed Postgres URL to the service's Environment > Environment Variables as DATABASE_URL (example: postgresql://user:pass@host:5432/dbname?sslmode=require). Do not commit a .env file to the repo."
+        "DATABASE_URL environment variable is not set. On Render: add your managed Postgres URL to the service's Environment > Environment " \
+        "Variables as DATABASE_URL (example: postgresql://user:pass@host:5432/dbname?sslmode=require). Do not commit a .env file to the repo."
     )
+
+# >>>>> CRITICAL FIX: Replace 'postgres://' with 'postgresql://' for SQLAlchemy compatibility
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# <<<<< END CRITICAL FIX
 
 # Configure connect_args for SSL (only for remote connections, not localhost)
 connect_args = {}

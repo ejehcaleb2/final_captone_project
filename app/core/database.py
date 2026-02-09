@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from os import getenv
 
-DATABASE_URL = "postgresql://postgres:19981235prince@localhost:5432/course_enrollment_db"
+# Load database URL from environment variable
+DATABASE_URL = getenv("DATABASE_URL", "postgresql://localhost/course_enrollment_db")
 
 engine = create_engine(DATABASE_URL)
 

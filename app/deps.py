@@ -6,6 +6,8 @@ from jose import JWTError, jwt
 from app.core.database import SessionLocal
 from app.models.user import User
 from app.core.security import SECRET_KEY, ALGORITHM
+import logging
+import sqlalchemy
 
 # --- Database dependency ---
 def get_db():
@@ -34,7 +36,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise credentials_exception
 
-    user = db.query(User).filter(User.email == email).first()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError):
+        logging.exception("Database error in get_current_user")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                            detail="Database error. Ensure migrations have been applied.")
+
     if user is None or not user.is_active:
         raise credentials_exception
     return user

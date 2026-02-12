@@ -54,6 +54,7 @@ uvicorn app.main:app --reload
 ```
 
 Interactive docs: https://final-captone-project.onrender.com/docs
+Deployment: Render
 
 **Testing**
 Run the automated test suite:

@@ -9,7 +9,6 @@ A secure, database-backed RESTful API for managing a course enrollment platform 
 - Role-based access control (Student/Admin)
 - Course management
 - Enrollment management with business rules
-- SQLite database with migrations
 - Comprehensive automated tests
 
 ## Setup Instructions

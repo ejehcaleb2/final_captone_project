@@ -14,7 +14,6 @@ router = APIRouter(prefix="/courses", tags=["Courses"])
 
 @router.post("/", response_model=CourseOut)
 def admin_create_course(course: CourseCreate, db: Session = Depends(get_db), admin_user = Depends(get_current_admin)):
-    # check if course code already exists
     existing_course = db.query(Course).filter(Course.code == course.code).first()
     if existing_course:
         raise HTTPException(
@@ -28,14 +27,12 @@ def admin_create_course(course: CourseCreate, db: Session = Depends(get_db), adm
 
 @router.get("/", response_model=List[CourseOut])
 def get_all_courses(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    # Only authenticated users (students or admins) may view courses
     courses = db.query(Course).filter(Course.is_active == True).all()
     return courses
 
 
 @router.get("/{course_id}", response_model=CourseOut)
 def get_course(course_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    # Only authenticated users (students or admins) may view a course
     course = db.query(Course).filter(Course.id == course_id, Course.is_active == True).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -87,7 +84,6 @@ def admin_delete_course(course_id: int, db: Session = Depends(get_db), admin_use
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     
-    # Check if course has enrollments
     enrollments_count = db.query(Enrollment).filter(Enrollment.course_id == course_id).count()
     if enrollments_count > 0:
         raise HTTPException(status_code=400, detail="Cannot delete course with active enrollments")

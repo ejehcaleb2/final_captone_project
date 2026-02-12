@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
-from app.api import enrollment, users, courses, admin
+from app.api import enrollment, users, courses
 import os
 import logging
 
@@ -15,6 +15,32 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Course Enrollment Platform", version="1.0.0")
 
+
+def run_alembic_migrations():
+    """Run Alembic migrations programmatically using alembic.ini at repo root."""
+    try:
+        cfg = Config("alembic.ini")
+        command.upgrade(cfg, "head")
+        logging.info("Alembic migrations applied successfully.")
+    except Exception:
+        logging.exception("Failed to run alembic migrations")
+
+
+@app.on_event("startup")
+def on_startup():
+    # Optionally auto-run migrations in deployed environments when enabled
+    auto = os.getenv("AUTO_MIGRATE", "false").lower()
+    if auto in ("1", "true", "yes"):
+        logging.info("AUTO_MIGRATE enabled — running alembic migrations on startup")
+        run_alembic_migrations()
+
+
+# Include the users router
+app.include_router(users.router, prefix="/users", tags=["Users"])
+
+# Include the courses router
+app.include_router(courses.router)  # courses router already has prefix="/courses" and tag
+app.include_router(enrollment.router)
 
 
 @app.get("/")

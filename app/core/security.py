@@ -3,14 +3,13 @@ from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from os import getenv
 
-# --- Password hashing ---
+
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
-# --- Password hashing ---
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def hash_password(password: str) -> str:
-    # bcrypt has a 72-byte input limit; truncate to avoid backend errors
+   
     if password is None:
         password = ""
     pw = password[:72]
@@ -22,7 +21,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     pw = plain_password[:72]
     return pwd_context.verify(pw, hashed_password)
 
-# --- JWT creation ---
+
 SECRET_KEY = getenv("SECRET_KEY", "fallback-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60

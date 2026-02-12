@@ -8,8 +8,6 @@ from app.models.enrollment import Enrollment
 from app.core.database import engine
 from app.core.security import hash_password, verify_password, create_access_token
 from app.deps import get_db
-import logging
-import sqlalchemy
 
 router = APIRouter()
 
@@ -38,13 +36,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
 
     
-    try:
-        existing_user = db.query(User).filter(User.email == user.email).first()
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
-        logging.exception("Database error during register_user")
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                            detail="Database error. Ensure migrations have been applied.")
-
+    existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -64,15 +56,9 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     )
 
    
-    try:
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
-        db.rollback()
-        logging.exception("Database error when creating user")
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                            detail="Database error. Ensure migrations have been applied.")
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
 
     return new_user
 
@@ -80,12 +66,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
    
-    try:
-        user = db.query(User).filter(User.email == form_data.username).first()
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
-        logging.exception("Database error during login")
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                            detail="Database error. Ensure migrations have been applied.")
+    user = db.query(User).filter(User.email == form_data.username).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -107,67 +88,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     access_token = create_access_token(data={"sub": user.email})
 
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-class LoginRequest(BaseModel):
-    """JSON-based login request (alternative to form-encoded)."""
-    email: EmailStr
-    password: str
-
-
-@router.post("/login-json", response_model=Token)
-def login_json(creds: LoginRequest, db: Session = Depends(get_db)):
-    """JSON-based login endpoint. Use this if sending JSON instead of form data."""
-    try:
-        user = db.query(User).filter(User.email == creds.email).first()
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
-        logging.exception("Database error during login_json")
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                            detail="Database error. Ensure migrations have been applied.")
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
-
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive"
-        )
-
-    if not verify_password(creds.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
-
-    access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
-@router.get("/health")
-def health_check(db: Session = Depends(get_db)):
-    """Health check endpoint — verifies DB connectivity and tables exist."""
-    try:
-        # Try to query a count of users (verifies schema exists)
-        user_count = db.query(User).count()
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "users_table_exists": True,
-            "user_count": user_count
-        }
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
-        logging.exception("Database error in health check")
-        return {
-            "status": "unhealthy",
-            "database": "error",
-            "detail": str(e),
-            "message": "Database error. Ensure migrations have been applied."
-        }
-
 
 from app.deps import get_current_user
 
@@ -197,8 +117,7 @@ def admin_delete_user(user_id: int, db: Session = Depends(get_db), admin_user: U
     
     if user.role != "student":
         raise HTTPException(status_code=400, detail="Can only delete student accounts")
-    
-    # Delete enrollments first
+
     db.query(Enrollment).filter(Enrollment.user_id == user_id).delete()
     
     # Delete user

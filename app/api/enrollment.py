@@ -27,7 +27,6 @@ def student_enroll(enrollment: EnrollmentCreate, db: Session = Depends(get_db), 
 
 @router.delete("/{course_id}", response_model=dict)
 def student_deregister(course_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    # Only students may deregister themselves
     if current_user.role != "student":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only students may deregister from courses")
     enrollment = db.query(Enrollment).filter(

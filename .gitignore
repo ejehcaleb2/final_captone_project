@@ -3,7 +3,11 @@
 .env.local
 .env.*.local
 
-# Database files
+# Database files - SQLite and local DB files
+*.db
+*.sqlite
+*.sqlite3
+instance/
 
 # Python
 __pycache__/

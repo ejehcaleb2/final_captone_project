@@ -70,24 +70,3 @@ def delete_user(user_id: int, db: Session = Depends(get_db), admin_user: User = 
     db.delete(user)
     db.commit()
     return {"message": "Student deleted successfully"}
-
-
-@router.get("/health", tags=["Health"])
-def health_check(db: Session = Depends(get_db)):
-    """Health check endpoint — verifies DB connectivity and tables exist."""
-    try:
-        user_count = db.query(User).count()
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "users_table_exists": True,
-            "user_count": user_count
-        }
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
-        logging.exception("Database error in health check")
-        return {
-            "status": "unhealthy",
-            "database": "error",
-            "detail": str(e),
-            "message": "Database error. Ensure migrations have been applied."
-        }

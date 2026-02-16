@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
-from app.api import enrollment, users, courses
+from app.api import enrollment, users, courses, auth, admin
 import os
 import logging
 
@@ -35,12 +35,12 @@ def on_startup():
         run_alembic_migrations()
 
 
-# Include the users router
-app.include_router(users.router, prefix="/users", tags=["Users"])
-
-# Include the courses router
-app.include_router(courses.router)  # courses router already has prefix="/courses" and tag
+# Include routers with /api/v1 structure
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(courses.router)
 app.include_router(enrollment.router)
+app.include_router(admin.router)
 
 
 @app.get("/")

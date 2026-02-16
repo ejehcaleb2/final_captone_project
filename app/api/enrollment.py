@@ -7,7 +7,7 @@ from app.schemas.enrollment import EnrollmentCreate, EnrollmentOut
 from app.crud.enrollment import enroll_student
 from app.deps import get_db, get_current_user, get_current_admin
 
-router = APIRouter(prefix="/enrollments", tags=["Enrollments"])
+router = APIRouter(prefix="/api/v1/enrollment", tags=["Enrollment"])
 
 
 @router.post("/", response_model=EnrollmentOut)

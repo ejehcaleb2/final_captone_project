@@ -1,22 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
+import logging
+import sqlalchemy
 
-from app.models.user import User, Base
+from app.models.user import User
 from app.models.enrollment import Enrollment
-from app.core.database import engine
-from app.core.security import hash_password, verify_password, create_access_token
-from app.deps import get_db
+from app.deps import get_db, get_current_user, get_current_admin
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/user", tags=["User"])
 
-
-class UserCreate(BaseModel):
-    name: str
-    email: EmailStr
-    password: str
-    role: str 
 
 class UserOut(BaseModel):
     id: int
@@ -25,92 +18,44 @@ class UserOut(BaseModel):
     role: str
     is_active: bool
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-@router.post("/register", response_model=UserOut)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    
-    if user.role not in ("student", "admin"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
-
-    
-    existing_user = db.query(User).filter(User.email == user.email).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-
-  
-    hashed_pwd = hash_password(user.password)
-
-    
-    new_user = User(
-        name=user.name,
-        email=user.email,
-        hashed_password=hashed_pwd,
-        role=user.role,
-        is_active=True
-    )
-
-   
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    return new_user
-
-
-@router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-   
-    user = db.query(User).filter(User.email == form_data.username).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid email or password"
-        )
-
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
-        )
-
-    if not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid email or password"
-        )
-    # Create JWT token
-    access_token = create_access_token(data={"sub": user.email})
-
-    return {"access_token": access_token, "token_type": "bearer"}
-
-from app.deps import get_current_user
 
 @router.get("/me", response_model=UserOut)
-def read_current_user(current_user: User = Depends(get_current_user)):
+def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current authenticated user info."""
     return current_user
 
-from app.deps import get_current_admin
 
-@router.get("/admin-test")
-def admin_only_test(admin_user: User = Depends(get_current_admin)):
-    return {
-        "message": "You are an admin",
-        "email": admin_user.email
-    }
+@router.get("", response_model=list[UserOut])
+def get_all_users(db: Session = Depends(get_db), admin_user: User = Depends(get_current_admin)):
+    """Get all users (admin only)."""
+    users = db.query(User).all()
+    return users
 
-@router.get("/students", response_model=list[UserOut])
-def get_all_students(db: Session = Depends(get_db), admin_user: User = Depends(get_current_admin)):
-    students = db.query(User).filter(User.role == "student").all()
-    return students
+
+@router.get("/{email}", response_model=UserOut)
+def get_user_by_email(email: str, db: Session = Depends(get_db), admin_user: User = Depends(get_current_admin)):
+    """Get user by email (admin only)."""
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@router.patch("/{user_id}/activate")
+def activate_user(user_id: int, db: Session = Depends(get_db), admin_user: User = Depends(get_current_admin)):
+    """Activate a user (admin only)."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_active = True
+    db.commit()
+    return {"message": "User activated successfully"}
+
 
 @router.delete("/{user_id}")
-def admin_delete_user(user_id: int, db: Session = Depends(get_db), admin_user: User = Depends(get_current_admin)):
+def delete_user(user_id: int, db: Session = Depends(get_db), admin_user: User = Depends(get_current_admin)):
+    """Delete a user and their enrollments (admin only)."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -118,9 +63,31 @@ def admin_delete_user(user_id: int, db: Session = Depends(get_db), admin_user: U
     if user.role != "student":
         raise HTTPException(status_code=400, detail="Can only delete student accounts")
 
+    # Delete enrollments first
     db.query(Enrollment).filter(Enrollment.user_id == user_id).delete()
     
     # Delete user
     db.delete(user)
     db.commit()
     return {"message": "Student deleted successfully"}
+
+
+@router.get("/health", tags=["Health"])
+def health_check(db: Session = Depends(get_db)):
+    """Health check endpoint — verifies DB connectivity and tables exist."""
+    try:
+        user_count = db.query(User).count()
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "users_table_exists": True,
+            "user_count": user_count
+        }
+    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
+        logging.exception("Database error in health check")
+        return {
+            "status": "unhealthy",
+            "database": "error",
+            "detail": str(e),
+            "message": "Database error. Ensure migrations have been applied."
+        }

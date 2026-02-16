@@ -9,7 +9,7 @@ from app.crud.course import create_course, update_course
 from app.deps import get_db, get_current_admin, get_current_user
 from app.models.user import User
 
-router = APIRouter(prefix="/courses", tags=["Courses"])
+router = APIRouter(prefix="/api/v1/course", tags=["Course"])
 
 
 @router.post("/", response_model=CourseOut)

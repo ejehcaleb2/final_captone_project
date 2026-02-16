@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-# Course Enrollment Platform(This project nearly killed me but no wahala😭)
+# Course Enrollment Platform(This project humbled me for real)
 
 A secure, database-backed RESTful API for managing a course enrollment platform using FastAPI.
 

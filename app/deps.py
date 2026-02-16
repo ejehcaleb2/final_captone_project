@@ -54,3 +54,5 @@ def get_current_admin(current_user: User = Depends(get_current_user)):
             detail="Admin privileges required"
         )
     return current_user
+
+# I will come bac here later

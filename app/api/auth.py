@@ -112,33 +112,33 @@ class LoginRequest(BaseModel):
     password: str
 
 
-@router.post("/login-json", response_model=Token)
-def login_json(creds: LoginRequest, db: Session = Depends(get_db)):
-    """Log in using JSON credentials (alternative to form-encoded)."""
-    try:
-        user = db.query(User).filter(User.email == creds.email).first()
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
-        logging.exception("Database error during login_json")
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                            detail="Database error. Ensure migrations have been applied.")
+# @router.post("/login-json", response_model=Token)
+# def login_json(creds: LoginRequest, db: Session = Depends(get_db)):
+#     """Log in using JSON credentials (alternative to form-encoded)."""
+#     try:
+#         user = db.query(User).filter(User.email == creds.email).first()
+#     except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
+#         logging.exception("Database error during login_json")
+#         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+#                             detail="Database error. Ensure migrations have been applied.")
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
+#     if not user:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid email or password"
+#         )
 
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive"
-        )
+#     if not user.is_active:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="User account is inactive"
+#         )
 
-    if not verify_password(creds.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
+#     if not verify_password(creds.password, user.hashed_password):
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid email or password"
+#         )
 
-    access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+#     access_token = create_access_token(data={"sub": user.email})
+#     return {"access_token": access_token, "token_type": "bearer"}
